@@ -1,5 +1,5 @@
 import os
-import oracledb
+import cx_Oracle
 from openai import OpenAI
 from dotenv import load_dotenv
 from typing import List, Dict, Any
@@ -10,8 +10,8 @@ load_dotenv()
 
 class OracleNLQuery:
     def __init__(self):
-        # Initialize OpenAI client without any arguments
-        self.client = OpenAI()  # The API key will be read from environment variable automatically
+        # Initialize OpenAI client
+        self.client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
         
         # Database connection parameters
         self.connection_params = {
@@ -27,7 +27,7 @@ class OracleNLQuery:
     def connect(self):
         """Establish connection to Oracle database"""
         try:
-            self.connection = oracledb.connect(**self.connection_params)
+            self.connection = cx_Oracle.connect(**self.connection_params)
             print("Successfully connected to Oracle database")
         except Exception as e:
             print(f"Error connecting to database: {e}")
@@ -66,7 +66,6 @@ class OracleNLQuery:
         
         Return only the SQL query without any explanation or additional text.
         Make sure the SQL query is safe and follows Oracle SQL syntax.
-        Do not include a semicolon at the end of the query.
         """
         
         try:
@@ -79,9 +78,7 @@ class OracleNLQuery:
                 temperature=0.3
             )
             
-            # Strip any semicolon from the end of the query
-            sql_query = response.choices[0].message.content.strip()
-            return sql_query.rstrip(';')
+            return response.choices[0].message.content.strip()
         except Exception as e:
             print(f"Error converting query: {e}")
             raise
@@ -116,12 +113,12 @@ class OracleNLQuery:
             print("Database connection closed")
 
 def main():
-    nl_query = None  # Initialize to None so it's always defined
+    # Example usage
     try:
         nl_query = OracleNLQuery()
         
         # Example natural language query
-        query = "who is getting more salary in the Managers "
+        query = "Show me all employees with salary greater than 50000"
         results = nl_query.query(query)
         
         print("\nResults:")
@@ -130,8 +127,7 @@ def main():
     except Exception as e:
         print(f"Error: {e}")
     finally:
-        if nl_query:  # Only try to close if it was successfully created
-            nl_query.close()
+        nl_query.close()
 
 if __name__ == "__main__":
     main() 
